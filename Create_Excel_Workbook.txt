@@ -1,0 +1,40 @@
+Option Compare Database
+
+Sub OuvertureFichierExcel(PathTemplate As String, WbkTemplate As Workbook, Nwb As Workbook)
+'Cette fonction :
+' 1. ouvre le fichier Excel "Template" contenant tous les rapports existants de la liasse dont le chemin est passé en paramètre
+'et l'assigne au pointeur passé en paramètre "wbkTemplate"
+' 2. crée un nouveau classeur excel et lui assigne le pointeur nwb passé en paramètre
+
+'Requires to define in Tools menu the reference to Microsoft Excel Object Library
+Dim objXL As Excel.Application
+
+Dim i As Integer
+ 
+'ouvrir Excel
+'Si Excel est déjà ouvert sur le PC, GetObject suffit.
+On Local Error Resume Next
+Set objXL = GetObject(, "Excel.Application")
+
+'Par contre, si Excel n'est pas encore lancé sur le PC, alors il faut le faire par CreateObject
+If Nothing Is objXL Then
+    Set objXL = CreateObject("Excel.Application")
+   Set WbkTemplate = objXL.Workbooks.Open(PathTemplate)
+
+Else 'Excel était déja ouvert
+   'si le classeur est également ouvert, GetObject suffit
+   Set WbkTemplate = GetObject(PathTemplate)
+   'si par contre le classeur n'était pas ouvert, alors l'ouvrir avec .open
+   If Nothing Is WbkTemplate Then
+      Set WbkTemplate = objXL.Workbooks.Open(PathTemplate)
+   End If
+End If
+
+'Créaton du nouveau document
+
+Set Nwb = Workbooks.Add
+
+On Error GoTo 0
+objXL.Visible = True
+
+End Sub

@@ -1,0 +1,352 @@
+Formulaire_Creation
+
+Option Compare Database
+
+Private Sub Cheminfichier_DblClick(Cancel As Integer)
+
+'On dévérouille en double cliquant sur la zone de texte l'emplacement du chemin pour enregistrer le fichier
+Cheminfichier.Locked = False
+
+End Sub
+
+Private Sub ChoixRapport_Change()
+'Affiche la liste des onglets dans le sous formulaire selon le rapport choisi
+
+Dim stSql1 As String
+Dim stSql2 As String
+Dim ChoixRapport As String
+Dim rstfm As Recordset
+
+ChoixRapport = Forms.creation.ChoixRapport
+
+stSql1 = "SELECT Tb_Lien_OngletRapport.Onglet, Tb_Lien_OngletRapport.A_Importer, Tb_Onglet.Odre " + _
+        "FROM Tb_Onglet INNER JOIN Tb_Lien_OngletRapport ON Tb_Onglet.Onglet = Tb_Lien_OngletRapport.Onglet "
+stSql2 = "WHERE (((Tb_Lien_OngletRapport.Rapport)=" + Chr(34) + ChoixRapport + Chr(34) + "))" + _
+        "ORDER BY Tb_Onglet.Odre;"
+                
+Me!OngletRapport_SF.Form.RecordSource = stSql1 + stSql2
+End Sub
+
+Private Sub Form_Load()
+
+   'Affiche l'année du dernier enregistrement ajouté à HistoVentes
+   'Reporte cette valeur dans la case du choix de la période à importer
+   
+   Dim dbs As DAO.Database
+   Dim rcd As DAO.Recordset
+   Dim rcdbob As DAO.Recordset
+   
+ 'La partie pour HistoVentes
+   Set dbs = CurrentDb
+   Set rcd = dbs.OpenRecordset("SELECT Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH " + _
+                               "FROM Tb_HistoVentes " + _
+                               "ORDER BY Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH;")
+   
+   
+   'Cette instruction donne le dernier enregistrement ajouté
+   rcd.MoveLast
+   YYYY = rcd!CD_YEAR.Value
+   MM = rcd!CD_MONTH.Value
+   
+  
+   AnneeVente = YYYY
+   AnneeVenteselec = YYYY
+   MoisVente = MM
+   MoisVenteselec = MM
+
+   Set rcd = Nothing
+   
+'La partie pour HistoBob
+   Set rcdbob = dbs.OpenRecordset("SELECT Tb_HistoBob.HFYEAR, Tb_HistoBob.HMONTH " + _
+                               "FROM Tb_HistoBob " + _
+                               "ORDER BY Tb_HistoBob.HFYEAR, Tb_HistoBob.HMONTH;")
+                                                         
+    rcdbob.MoveLast
+   YYYYY = rcdbob!HFYEAR.Value
+   MMM = rcdbob!HMONTH.Value
+   
+ 
+   AnneeBob = YYYYY
+   AnneeBobselec = YYYYY
+   MoisBob = MMM
+   MoisBobselec = MMM
+
+   Set rcdbob = Nothing
+   
+'Met en valeur par défaut les données de la requête AUCUN afin de classer les onglets dans le sous formulaire
+Dim stSql1 As String
+Dim stSql2 As String
+Dim ChoixRapport As String
+Dim rstfm As Recordset
+ChoixRapport = "AUCUN"
+
+stSql1 = "SELECT Tb_Lien_OngletRapport.Onglet, Tb_Lien_OngletRapport.A_Importer, Tb_Onglet.Odre " + _
+        "FROM Tb_Onglet INNER JOIN Tb_Lien_OngletRapport ON Tb_Onglet.Onglet = Tb_Lien_OngletRapport.Onglet "
+stSql2 = "WHERE (((Tb_Lien_OngletRapport.Rapport)=" + Chr(34) + ChoixRapport + Chr(34) + "))" + _
+        "ORDER BY Tb_Onglet.Odre;"
+                
+Me!OngletRapport_SF.Form.RecordSource = stSql1 + stSql2
+   
+End Sub
+
+Private Sub Image101_Click()
+'Affiche le descriptif d'HistoVentes en cliquant sur l'icône point d'interrogation
+Dim message As String
+
+message = "HistoVentes liste toutes les ventes effectuées et donne leurs carctéristiques telles la quantité, le type de commande, l'éditeur ou le client."
+
+MsgBox message
+
+End Sub
+Private Sub Image102_Click()
+'Affiche le descriptif d'HistoBoB en cliquant sur l'icône point d'interrogation
+Dim message As String
+
+message = "HistoBoB reprend les données du logiciel BOB et permet de compléter le CR."
+
+MsgBox message
+
+End Sub
+
+Private Sub ImportHistoVentes_Click()
+
+'Lance la macro qui complète HistoVentes
+DoCmd.RunMacro "Transfert_Ventes_Mois"
+
+End Sub
+
+Private Sub MoisBobselec_AfterUpdate()
+'Contrôle la validité des données
+If Forms.creation.MoisBobselec.Value > 12 Or Forms.creation.MoisBobselec.Value <= 0 Then
+MsgBox "Veuillez entrer un numéro de mois valide"
+End If
+End Sub
+
+Private Sub MoisInf_AfterUpdate()
+'Contrôle la validité des données
+If Forms.creation.MoisInf.Value > 12 Or Forms.creation.MoisInf.Value <= 0 Then
+MsgBox "Veuillez entrer un numéro de mois valide"
+End If
+End Sub
+
+Private Sub MoisSup_AfterUpdate()
+'Contrôle la validité des données
+If Forms.creation.MoisSup.Value > 12 Or Forms.creation.MoisSup.Value <= 0 Then
+MsgBox "Veuillez entrer un numéro de mois valide"
+End If
+End Sub
+
+Private Sub MoisVenteselec_AfterUpdate()
+'Contrôle la validité des données
+If Forms.creation.MoisVenteselec.Value > 12 Or Forms.creation.MoisVenteselec.Value <= 0 Then
+MsgBox "Veuillez entrer un numéro de mois valide"
+End If
+End Sub
+
+Private Sub NouveauFichier_DblClick(Cancel As Integer)
+
+  Dim fd As Office.FileDialog
+  
+  ' Créer un objet FileDialog
+  Set fd = Application.FileDialog(msoFileDialogFolderPicker)
+  
+  ' Titre de la boîte
+  fd.Title = "Sélectionnez un dossier..."
+  
+  ' Afficher la boîte et traiter le résultat
+  If fd.Show() Then
+    MsgBox "Vous avez sélectionné le dossier : " _
+      & vbCrLf & fd.SelectedItems(1), vbInformation
+  End If
+  dosierTemporaire = fd.SelectedItems(1)
+ Forms.creation.NouveauFichier = dosierTemporaire
+  Set fd = Nothing
+  
+End Sub
+
+Private Sub Valider_Click()
+'Cette procédure est liée au formulaire création.
+'C'est ici qu'on va appeler les procédures qui complétent les onglets de la liasse
+
+BarreProgression.Value = 0
+MsgBox "Procédure lançée"
+
+Dim iAnnee As Integer
+Dim iMoisSup As Integer
+Dim iMoisInf As Integer
+
+Dim WbkTempl As Workbook   'Pointeur sur le classeur Excel "Template"
+Dim Template As String     'Chemin + nom du classeur Excel contenant le "Template"
+Dim NomFichier As String   'Nom sous lequel la liasse exportée sera enregistré
+Dim CheminNouveauFichier As String 'Emplacement où sera enregistré la liasse exportée
+Dim astrLinks As Variant
+Dim i As Integer
+
+Dim Nwb As Workbook
+Dim controleRapport As Boolean
+Dim WshFeuille As Worksheet
+Dim rs As DAO.Recordset
+Dim dbs As DAO.Database
+Dim rsTbOnglet As DAO.Recordset 'Le recordset basé sur la table onglet pour faciliter l'appel des procédures
+Set dbs = CurrentDb
+
+'On associe à  nos variables les paramètres rentrées dans le formulaire Creation
+iAnnee = Forms.creation.Annee.Value
+iMoisSup = Forms.creation.MoisSup.Value
+iMoisInf = Forms.creation.MoisInf.Value
+Template = Forms.creation.Cheminfichier.Value
+
+'On controle que les paramètres passés en mois sont corrects
+If iMoisSup > 12 Or iMoisSup <= 0 Or iMoisInf > 12 Or iMoisInf <= 0 Then
+MsgBox "Veuillez entrer un numéro de mois valide"
+End If
+
+'La barre de progression est découpée en 20 morceaux représentant 5 points chacun
+i = 5
+BarreProgression.Value = i
+Call OuvertureFichierExcel(Template, WbkTempl, Nwb)
+
+
+'Copie des paramètres de la période de création du rapport dans l'onglet Date
+WbkTempl.Worksheets("DATE").Cells(1, 2) = iAnnee
+WbkTempl.Worksheets("DATE").Cells(2, 2) = iMoisSup
+WbkTempl.Worksheets("DATE").Cells(2, 3) = iMoisInf
+
+'Transfert des onglets commun à tous les rapports
+WbkTempl.Worksheets("en tête").Copy before:=Nwb.Sheets(1)
+
+'Suppression des onglets créés par défaut à la création du classeur
+While Nwb.Sheets.Count >= 2
+   Nwb.Sheets(2).Delete
+Wend
+i = 10
+BarreProgression.Value = i
+'Lance les procédures en fonction des onglets cochés
+
+Set rs = Forms.creation.OngletRapport_SF.Form.Recordset
+rs.MoveFirst
+i = 20
+BarreProgression.Value = i
+While Not rs.EOF
+    If rs!A_Importer = True Then
+        controleRapport = False
+        
+    If rs!onglet <> "B-Editeurs Retraitement" And rs!onglet <> "Retards Triage" And rs!onglet <> "Graphique triage" Then
+
+'Ce recordset sélectionne la liste des onglets existants dans la table Tb_Onglet
+Set rsTbOnglet = dbs.OpenRecordset("SELECT Tb_Onglet.Onglet " + _
+                            "FROM Tb_Onglet " + _
+                            "ORDER BY Tb_Onglet.Odre;")
+
+
+            'Cette instruction; qui se trouve avant chaque paragraphe, nous permet de nous positionner sur un onglet
+            'Chaque onglet a une position indiqué dans le champ "ordre", ainsi une position est associée à un appel de procédure
+            'Les positions sont indiquées dans les commentaires
+            rsTbOnglet.MoveFirst 'Position 0
+        If rs!onglet = rsTbOnglet(0).Value Then '"Faits Marquants" Then
+            WbkTempl.Worksheets("Faits Marquants").Copy After:=Nwb.Sheets(Nwb.Sheets.Count)
+            Set WshFeuille = Nwb.Worksheets("Faits Marquants")
+            Call AlimFaitsMarquant(iAnnee, iMoisSup, iMoisInf, Nwb)
+            controleRapport = True
+        End If
+
+        rsTbOnglet.MoveNext 'Position 1
+        If rs!onglet = rsTbOnglet(0).Value Then
+            WbkTempl.Worksheets("Faits Marquants Diffusé").Copy After:=Nwb.Sheets(Nwb.Sheets.Count)
+            Set WshFeuille = Nwb.Worksheets("Faits Marquants Diffusé")
+            Call AlimFaitsMarquantsDiffusé(iAnnee, iMoisSup, iMoisInf, Nwb)
+            controleRapport = True
+        End If
+        
+        rsTbOnglet.MoveNext 'Position 2
+        If rs!onglet = rsTbOnglet(0).Value Then
+            WbkTempl.Worksheets("Reseaux").Copy After:=Nwb.Sheets(Nwb.Sheets.Count)
+            Set WshFeuille = Nwb.Worksheets("Reseaux")
+            Call AlimReseaux(iAnnee, iMoisSup, iMoisInf, Nwb)
+            controleRapport = True
+        End If
+        
+        rsTbOnglet.MoveNext 'Position 3
+        If rs!onglet = rsTbOnglet(0).Value Then
+            WbkTempl.Worksheets("Flux-Reseaux").Copy After:=Nwb.Sheets(Nwb.Sheets.Count)
+            Set WshFeuille = Nwb.Worksheets("Flux-Reseaux")
+            Call AlimFluxReseaux(iAnnee, iMoisSup, iMoisInf, Nwb)
+            controleRapport = True
+        End If
+        
+        rsTbOnglet.MoveNext 'Position 4
+        If rs!onglet = rsTbOnglet(0).Value Then
+            WbkTempl.Worksheets("Editeurs mois").Copy After:=Nwb.Sheets(Nwb.Sheets.Count)
+            Set WshFeuille = Nwb.Worksheets("Editeurs mois")
+            Call AlimEditeurMois(iAnnee, iMoisSup, iMoisInf, Nwb)
+            controleRapport = True
+        End If
+        
+        rsTbOnglet.MoveNext 'Position 5
+        If rs!onglet = rsTbOnglet(0).Value Then
+            WbkTempl.Worksheets("Editeurs Cumul").Copy After:=Nwb.Sheets(Nwb.Sheets.Count)
+            Set WshFeuille = Nwb.Worksheets("Editeurs Cumul")
+            Call AlimEditeurCumul(iAnnee, iMoisSup, iMoisInf, Nwb)
+            controleRapport = True
+        End If
+        
+        rsTbOnglet.MoveNext ''Position 6
+        If rs!onglet = rsTbOnglet(0).Value Then
+            WbkTempl.Worksheets("CR").Copy After:=Nwb.Sheets(Nwb.Sheets.Count)
+            Set WshFeuille = Nwb.Worksheets("CR")
+            Call AlimCR(iAnnee, iMoisSup, iMoisInf, Nwb)
+            controleRapport = True
+        End If
+        
+        If controleRapport = False Then
+        MsgBox "il n'y a pas de procédure associée au rapport " + rs!onglet.Value
+        End If
+        
+        'On complète l'onglet actif
+        Call remplissage(WshFeuille, rstfm, sMoisSup, sMoisInf)
+        WshFeuille.Range("1:4").Delete
+        WshFeuille.Range("A:C").Delete
+        
+        End If
+        
+        'On copie colle les onglets particuliers
+        rsTbOnglet.MoveFirst
+        rsTbOnglet.Move 7 'Position 7
+        If rs!onglet = rsTbOnglet(0) Then
+            WbkTempl.Worksheets("Retards Triage").Copy After:=Nwb.Sheets(Nwb.Sheets.Count)
+        End If
+        
+        rsTbOnglet.MoveNext 'Position 8
+        If rs!onglet = rsTbOnglet(0) Then
+            WbkTempl.Worksheets("Graphique triage").Copy After:=Nwb.Sheets(Nwb.Sheets.Count)
+        End If
+        
+        rsTbOnglet.MoveNext 'Position 9
+         If rs!onglet = rsTbOnglet(0) Then
+            WbkTempl.Worksheets("B-Editeurs Retraitement").Copy After:=Nwb.Sheets(Nwb.Sheets.Count)
+        End If
+    End If
+'A chaque rapport complété la barre de progression augmente de 5
+ i = i + 5
+BarreProgression.Value = i
+ rs.MoveNext
+Wend
+
+WbkTempl.Close False
+
+'Rompre la liaison entre le classeur résultant et l'onglet date du template
+'Define variable as an Excel link type.
+astrLinks = Nwb.LinkSources(Type:=xlLinkTypeExcelLinks)
+Nwb.BreakLink Name:=astrLinks(1), Type:=xlExcelLinks
+
+'On enregistre le nouveau fichier dans le dossier indiqué dans le formulaire
+'Son nom se compose du titr du rapport, du mois et de l'année
+BarreProgression.Value = 95
+NomFichier = "\" & Forms.creation.ChoixRapport.Value & "_" & iMoisSup & "_" & iAnnee & ".xlsx"
+CheminNouveauFichier = Forms.creation.NouveauFichier.Value
+Nwb.SaveAs FileName:=CheminNouveauFichier & NomFichier
+Nwb.Close True
+
+MsgBox "Procédure terminée"
+BarreProgression.Value = 0
+End Sub

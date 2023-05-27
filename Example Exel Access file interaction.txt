@@ -1,0 +1,627 @@
+Liasse
+
+
+Sub AlimFaitsMarquant() 'Paramètres : Année, Mois, Pointeur sur onglet FaitsMarquant dans fichier liasse.xlsx
+
+'Cette procédure alimente les champs de l'onglet "Faits Marquants" dans la liasse
+   
+   
+   'Variables crées à la place des paramètre
+   
+   Dim iAnnee As Integer
+   iAnnee = 2016
+   Dim iMois As Integer
+   iMois = 2
+   
+   Dim WkbkLiasse As workbook
+   Dim ShtFM As Worksheet
+   Set WkbkLiasse = GetObject("T:\Procédures\Cycle Financier\O_Organisation de la clôture comptable\Automatisation Liasse\Liasse\Liasse_Template.xlsx")
+   Set ShtFM = WkbkLiasse.Sheets("Faits Marquants")
+   
+   'Fin variables parametres
+
+   Dim DbsMe As DAO.Database
+   Dim rstFM As DAO.Recordset
+
+   Dim sAnnee As String
+   Dim sMois As String
+   
+   Dim stSql1 As String
+   Dim stSql2 As String
+   
+   Dim iRow As Long
+   Dim iCol As Long
+   Dim iRowAnnee As Long
+   Dim iRowCum As Long
+   
+   Dim dValCumul As Double
+   
+   
+   Set DbsMe = CurrentDb
+   'Définition de la requête permettant d'obtenir les infos pour compléter Faits Marquants (Voir "Nom" dans Access)
+      'Création des paramètres de la requête
+      sAnnee = CStr(iAnnee - 2)
+      sMois = Right("0" & CStr(iMois), 2)
+         
+      'Texte de la requête
+      stSql1 = "SELECT Tb_HistoVentes.COD_REGR_STAT, Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Sum(Tb_HistoVentes.MONT_CA_FORT) AS CA_FORT, " + _
+                   "Sum(Tb_HistoVentes.QTE_FACT) AS QTE_FACT " + _
+               "FROM Tb_HistoVentes "
+               
+      stSql2 = "GROUP BY Tb_HistoVentes.COD_REGR_STAT, Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH " + _
+               "HAVING (((Tb_HistoVentes.CD_YEAR) >= " + Chr(34) + sAnnee + Chr(34) + ") And ((Tb_HistoVentes.CD_MONTH) <= " + Chr(34) + sMois + Chr(34) + "))"
+
+      'Ouverture du recordset
+      Set rstFM = DbsMe.OpenRecordset(stSql1 + stSql2)
+      
+      'Balayer tout l'onglet pour le remplir
+      iRow = 1
+   
+      Call RefRowParam(ShtFM, iRowAnnee, iRowCum)
+      
+      While ShtFM.Cells(iRow, 1) <> "Fin"
+         'Si la ligne commence par D ==> il y a des cellules de la ligne qui doivent être remplies
+         If ShtFM.Cells(iRow, 1) = "D" Then
+            'Balayer chaque colonne
+            iCol = 1
+            While ShtFM.Cells(1, iCol) <> "Fin"
+               
+               If ShtFM.Cells(1, iCol) = "D" Then 'La colonne commence par "D" ==> la cellule doit être remplie
+                  If ShtFM.Cells(iRowCum, iCol) = "M" Then 'La colonne concerne des données du mois
+                     'Définir les critères permettant de trouver la valeur dans le recordset résultant de la requête
+                     
+                     stSql1 = "COD_REGR_STAT = " & Chr(34) & ShtFM.Cells(iRow, 2) & Chr(34)
+                     stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & ShtFM.Cells(iRowAnnee, iCol) & Chr(34)
+                     stSql1 = stSql1 & " AND CD_MONTH = " & Chr(34) & sMois & Chr(34)
+                     rstFM.FindFirst (stSql1)
+                     If Not rstFM.NoMatch Then
+                        ShtFM.Cells(iRow, iCol) = rstFM.Fields(ShtFM.Cells(iRow, 3)) / 1000
+                     End If
+                  
+                  End If
+                  
+                  If ShtFM.Cells(iRowCum, iCol) = "C" Then 'La colonne concerne des données cumulées
+                     'Définir les critères permettant de trouver les valeurs pour l'année dans le recordset résultant de la requête
+                     
+                     stSql1 = "COD_REGR_STAT = " & Chr(34) & ShtFM.Cells(iRow, 2) & Chr(34)
+                     stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & ShtFM.Cells(iRowAnnee, iCol) & Chr(34)
+                     rstFM.FindFirst (stSql1)
+                     dValCumul = 0
+                     While Not rstFM.NoMatch
+                        dValCumul = dValCumul + rstFM.Fields(ShtFM.Cells(iRow, 3))
+                        rstFM.FindNext (stSql1)
+                     Wend
+                  
+                     ShtFM.Cells(iRow, iCol) = dValCumul / 1000
+                  End If
+                  
+               End If
+               iCol = iCol + 1
+            Wend
+         End If
+      
+         iRow = iRow + 1
+         
+        
+      Wend
+      
+End Sub
+
+Sub AlimFaitsMarquantDiffusés()
+
+'Paramètres : Année, Mois, Pointeur sur onglet FaitsMarquant dans fichier liasse.xlsx
+
+'Cette procédure alimente les champs de l'onglet "Faits Marquants" dans la liasse
+   
+   
+   'Variables crées à la place des paramètre
+   
+   Dim iAnnee As Integer
+   iAnnee = 2016
+   Dim iMois As Integer
+   iMois = 2
+   
+   Dim WkbkLiasse As workbook
+   Dim ShtFMD As Worksheet
+   Set WkbkLiasse = GetObject("T:\Procédures\Cycle Financier\O_Organisation de la clôture comptable\Automatisation Liasse\Liasse\Liasse_Template.xlsx")
+   Set ShtFMD = WkbkLiasse.Sheets("Faits Marquants Diffusé")
+   
+   'Fin variables parametres
+
+   Dim DbsMe As DAO.Database
+   Dim rstFMD As DAO.Recordset
+
+   Dim sAnnee As String
+   Dim sMois As String
+   
+   Dim stSql1 As String
+   Dim stSql2 As String
+   
+   Dim iRow As Long
+   Dim iCol As Long
+   Dim iRowAnnee As Long
+   Dim iRowCum As Long
+   
+   Dim dValCumul As Double
+   
+   
+   Set DbsMe = CurrentDb
+   'Définition de la requête permettant d'obtenir les infos pour compléter Faits Marquants (Voir "Nom" dans Access)
+      'Création des paramètres de la requête
+      sAnnee = CStr(iAnnee - 2)
+      sMois = Right("0" & CStr(iMois), 2)
+         
+      'Texte de la requête
+      stSql1 = "SELECT Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Tb_HistoVentes.COD_REGR_STAT, Sum(Tb_HistoVentes.MONT_CA_FORT) AS CA_FORT, " + _
+                    "Sum(Tb_HistoVentes.QTE_FACT) AS QTE_FACT " + _
+                "FROM Tb_HistoVentes "
+                          
+      stSql2 = "GROUP BY Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Tb_HistoVentes.COD_REGR_STAT, Tb_HistoVentes.COD_EDITHACH " + _
+                "HAVING (((Tb_HistoVentes.CD_YEAR) >= " + Chr(34) + sAnnee + Chr(34) + ") And ((Tb_HistoVentes.CD_MONTH) <= " + Chr(34) + sMois + Chr(34) + ") AND ((Tb_HistoVentes.COD_EDITHACH)=" + Chr(34) + PRX + Chr(34) + "))"
+
+
+
+      'Ouverture du recordset
+      Set rstFMD = DbsMe.OpenRecordset(stSql1 + stSql2)
+      
+      'Balayer tout l'onglet pour le remplir
+      iRow = 1
+   
+      Call RefRowParam(ShtFMD, iRowAnnee, iRowCum)
+      
+      While ShtFMD.Cells(iRow, 1) <> "Fin"
+         'Si la ligne commence par D ==> il y a des cellules de la ligne qui doivent être remplies
+         If ShtFMD.Cells(iRow, 1) = "D" Then
+            'Balayer chaque colonne
+            iCol = 1
+            While ShtFMD.Cells(1, iCol) <> "Fin"
+               
+               If ShtFMD.Cells(1, iCol) = "D" Then 'La colonne commence par "D" ==> la cellule doit être remplie
+                  If ShtFMD.Cells(iRowCum, iCol) = "M" Then 'La colonne concerne des données du mois
+                     'Définir les critères permettant de trouver la valeur dans le recordset résultant de la requête
+                     
+                     stSql1 = "COD_REGR_STAT = " & Chr(34) & ShtFMD.Cells(iRow, 2) & Chr(34)
+                     stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & ShtFMD.Cells(iRowAnnee, iCol) & Chr(34)
+                     stSql1 = stSql1 & " AND CD_MONTH = " & Chr(34) & sMois & Chr(34)
+                     rstFMD.FindFirst (stSql1)
+                     If Not rstFMD.NoMatch Then
+                        ShtFMD.Cells(iRow, iCol) = rstFMD.Fields(ShtFMD.Cells(iRow, 3)) / 1000
+                     End If
+                  
+                  End If
+                  
+                  If ShtFMD.Cells(iRowCum, iCol) = "C" Then 'La colonne concerne des données cumulées
+                     'Définir les critères permettant de trouver les valeurs pour l'année dans le recordset résultant de la requête
+                     
+                     stSql1 = "COD_REGR_STAT = " & Chr(34) & ShtFMD.Cells(iRow, 2) & Chr(34)
+                     stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & ShtFMD.Cells(iRowAnnee, iCol) & Chr(34)
+                     rstFMD.FindFirst (stSql1)
+                     dValCumul = 0
+                     While Not rstFMD.NoMatch
+                        dValCumul = dValCumul + rstFMD.Fields(ShtFMD.Cells(iRow, 3))
+                        rstFMD.FindNext (stSql1)
+                     Wend
+                  
+                     ShtFMD.Cells(iRow, iCol) = dValCumul / 1000
+                  End If
+                  
+               End If
+               iCol = iCol + 1
+            Wend
+         End If
+      
+         iRow = iRow + 1
+         
+        
+      Wend
+
+
+End Sub
+Sub FaitsMarquantsDiffusé()
+
+ Dim iAnnee As Integer
+   iAnnee = 2016
+   Dim iMois As Integer
+   iMois = 2
+
+   Dim WkbkLiasse As workbook
+   Dim ShtFM As Worksheet
+   Set WkbkLiasse = GetObject("T:\Procédures\Cycle Financier\O_Organisation de la clôture comptable\Automatisation Liasse\Liasse\Liasse_Template.xlsx")
+   Set ShtFM = WkbkLiasse.Sheets("Faits Marquants Diffusé")
+   
+   'Fin variables parametres
+
+   Dim DbsMe As DAO.Database
+   Dim rstFM As DAO.Recordset
+
+   Dim sAnnee As String
+   Dim sMois As String
+   Dim sPresta As String
+   
+   Dim stSql1 As String
+   Dim stSql2 As String
+   
+   
+   Dim iRow As Long
+   Dim iCol As Long
+   Dim iRowAnnee As Long
+   Dim iRowCum As Long
+   
+   Dim dValCumul As Double
+   
+   
+   Set DbsMe = CurrentDb
+   'Définition de la requête permettant d'obtenir les infos pour compléter Faits Marquants (Voir "Nom" dans Access)
+      'Création des paramètres de la requête
+      sAnnee = CStr(iAnnee - 2)
+      sMois = Right("0" & CStr(iMois), 2)
+      sPresta = "PRX"
+      'Texte de la requête
+stSql1 = "SELECT Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Tb_HistoVentes.COD_REGR_STAT, Sum(Tb_HistoVentes.QTE_FACT) AS QTE_FACT, " + _
+        "Sum(Tb_HistoVentes.MONT_CA_FORT) AS CA_FORT, Tb_HistoVentes.COD_EDITHACH " + _
+        "FROM Tb_HistoVentes "
+stSql2 = "GROUP BY Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Tb_HistoVentes.COD_REGR_STAT, Tb_HistoVentes.COD_EDITHACH " + _
+        "HAVING (((Tb_HistoVentes.CD_YEAR)>= " + Chr(34) + sAnnee + Chr(34) + ") AND ((Tb_HistoVentes.CD_MONTH)<=" + Chr(34) + sMois + Chr(34) + ") " + _
+        "AND ((Tb_HistoVentes.COD_EDITHACH)=" + Chr(34) + sPresta + Chr(34) + "))"
+      'Ouverture du recordset
+      Set rstFM = DbsMe.OpenRecordset(stSql1 + stSql2)
+      
+      'Balayer tout l'onglet pour le remplir
+      iRow = 1
+   
+      Call RefRowParam(ShtFM, iRowAnnee, iRowCum)
+      
+      While ShtFM.Cells(iRow, 1) <> "Fin"
+         'Si la ligne commence par D ==> il y a des cellules de la ligne qui doivent être remplies
+         If ShtFM.Cells(iRow, 1) = "D" Then
+            'Balayer chaque colonne
+            iCol = 1
+            While ShtFM.Cells(1, iCol) <> "Fin"
+               
+               If ShtFM.Cells(1, iCol) = "D" Then 'La colonne commence par "D" ==> la cellule doit être remplie
+                  If ShtFM.Cells(iRowCum, iCol) = "M" Then 'La colonne concerne des données du mois
+                     'Définir les critères permettant de trouver la valeur dans le recordset résultant de la requête
+                     
+                     stSql1 = "COD_REGR_STAT = " & Chr(34) & ShtFM.Cells(iRow, 2) & Chr(34)
+                     stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & ShtFM.Cells(iRowAnnee, iCol) & Chr(34)
+                     stSql1 = stSql1 & " AND CD_MONTH = " & Chr(34) & sMois & Chr(34)
+                     rstFM.FindFirst (stSql1)
+                     If Not rstFM.NoMatch Then
+                        ShtFM.Cells(iRow, iCol) = rstFM.Fields(ShtFM.Cells(iRow, 3)) / 1000
+                     End If
+                  
+                  End If
+                  
+                  If ShtFM.Cells(iRowCum, iCol) = "C" Then 'La colonne concerne des données cumulées
+                     'Définir les critères permettant de trouver les valeurs pour l'année dans le recordset résultant de la requête
+                     
+                     stSql1 = "COD_REGR_STAT = " & Chr(34) & ShtFM.Cells(iRow, 2) & Chr(34)
+                     stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & ShtFM.Cells(iRowAnnee, iCol) & Chr(34)
+                     rstFM.FindFirst (stSql1)
+                     dValCumul = 0
+                     While Not rstFM.NoMatch
+                        dValCumul = dValCumul + rstFM.Fields(ShtFM.Cells(iRow, 3))
+                        rstFM.FindNext (stSql1)
+                     Wend
+                  
+                     ShtFM.Cells(iRow, iCol) = dValCumul / 1000
+                  End If
+                  
+               End If
+               iCol = iCol + 1
+            Wend
+         End If
+      
+         iRow = iRow + 1
+         
+        
+      Wend
+
+End Sub
+
+Sub AlimReseau()
+ Dim iAnnee As Integer
+   iAnnee = 2016
+   Dim iMois As Integer
+   iMois = 2
+
+   Dim WkbkLiasse As workbook
+   Dim ShtFM As Worksheet
+   Set WkbkLiasse = GetObject("T:\Procédures\Cycle Financier\O_Organisation de la clôture comptable\Automatisation Liasse\Liasse\Liasse_Template.xlsx")
+   Set ShtFM = WkbkLiasse.Sheets("Reseaux")
+   
+   'Fin variables parametres
+
+   Dim DbsMe As DAO.Database
+   Dim rstFM As DAO.Recordset
+
+   Dim sAnnee As String
+   Dim sMois As String
+   Dim sIntero As String
+  
+   
+   Dim stSql1 As String
+   Dim stSql2 As String
+   Dim stSql3 As String
+   
+   Dim iRow As Long
+   Dim iCol As Long
+   Dim iRowAnnee As Long
+   Dim iRowCum As Long
+   
+   Dim dValCumul As Double
+   
+   
+   Set DbsMe = CurrentDb
+   'Définition de la requête permettant d'obtenir les infos pour compléter Faits Marquants (Voir "Nom" dans Access)
+      'Création des paramètres de la requête
+      sAnnee = CStr(iAnnee - 2)
+      sMois = Right("0" & CStr(iMois), 2)
+      sIntero = "?"
+      
+      
+      'Texte de la requête
+        
+        
+stSql1 = "SELECT Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Tb_HistoVentes.COD_GRP_CLI, " + _
+        "Tb_HistoVentes.COD_ENSEIGNE, Sum(Tb_HistoVentes.MONT_CA_FORT) AS CA_FORT " + _
+        "FROM Tb_HistoVentes "
+stSql2 = " WHERE (((Tb_HistoVentes.COD_REGR_STAT)<>" + Chr(34) + sIntero + Chr(34) + "))" + _
+        "GROUP BY Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Tb_HistoVentes.COD_GRP_CLI, Tb_HistoVentes.COD_ENSEIGNE "
+stSql3 = "HAVING (((Tb_HistoVentes.CD_YEAR)>= " + Chr(34) + sAnnee + Chr(34) + ") AND ((Tb_HistoVentes.CD_MONTH)<=" + Chr(34) + sMois + Chr(34) + ")) "
+        
+        
+      'Ouverture du recordset
+      Set rstFM = DbsMe.OpenRecordset(stSql1 + stSql2 + stSql3)
+      
+      'Balayer tout l'onglet pour le remplir
+      iRow = 1
+   
+      Call RefRowParam(ShtFM, iRowAnnee, iRowCum)
+      
+      While ShtFM.Cells(iRow, 1) <> "Fin"
+         'Si la ligne commence par D ==> il y a des cellules de la ligne qui doivent être remplies
+         If ShtFM.Cells(iRow, 1) = "D" Then
+            'Balayer chaque colonne
+            iCol = 1
+            While ShtFM.Cells(1, iCol) <> "Fin"
+               
+               If ShtFM.Cells(1, iCol) = "D" Then 'La colonne commence par "D" ==> la cellule doit être remplie
+                  If ShtFM.Cells(iRowCum, iCol) = "M" Then 'La colonne concerne des données du mois
+                     'Définir les critères permettant de trouver la valeur dans le recordset résultant de la requête
+                     
+                    If ShtFM.Cells(iRow, 3) = "COD_ENSEIGNE" Then 'Indique si on regroupe sur l'enseigne ou le budget
+                        stSql1 = "COD_ENSEIGNE = " & Chr(34) & ShtFM.Cells(iRow, 2) & Chr(34)
+                        stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & ShtFM.Cells(iRowAnnee, iCol) & Chr(34)
+                        stSql1 = stSql1 & " AND CD_MONTH = " & Chr(34) & sMois & Chr(34)
+                        rstFM.FindFirst (stSql1)
+                         If Not rstFM.NoMatch Then
+                        ShtFM.Cells(iRow, iCol) = rstFM.Fields(ShtFM.Cells(iRow, 4)) / 1000
+                        End If
+
+                    ElseIf ShtFM.Cells(iRow, 3) = "COD_GRP_CLI" Then
+                     stSql2 = "COD_GRP_CLI = " & Chr(34) & ShtFM.Cells(iRow, 2) & Chr(34)
+                     stSql2 = stSql2 & " AND CD_YEAR = " & Chr(34) & ShtFM.Cells(iRowAnnee, iCol) & Chr(34)
+                     stSql2 = stSql2 & " AND CD_MONTH = " & Chr(34) & sMois & Chr(34)
+                     rstFM.FindFirst (stSql2)
+                     dValMois = 0
+                      While Not rstFM.NoMatch
+                        dValMois = dValMois + rstFM.Fields(ShtFM.Cells(iRow, 4))
+                        rstFM.FindNext (stSql2)
+                     Wend
+                     ShtFM.Cells(iRow, iCol) = dValMois / 1000
+                     End If
+                  End If
+                  
+                  
+                  If ShtFM.Cells(iRowCum, iCol) = "C" Then 'La colonne concerne des données cumulées
+                     'Définir les critères permettant de trouver les valeurs pour l'année dans le recordset résultant de la requête
+                     If ShtFM.Cells(iRow, 3) = "COD_ENSEIGNE" Then
+                     stSql1 = "COD_ENSEIGNE = " & Chr(34) & ShtFM.Cells(iRow, 2) & Chr(34)
+                     stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & ShtFM.Cells(iRowAnnee, iCol) & Chr(34)
+                     rstFM.FindFirst (stSql1)
+                     dValCumul = 0
+                     While Not rstFM.NoMatch
+                        dValCumul = dValCumul + rstFM.Fields(ShtFM.Cells(iRow, 4))
+                        rstFM.FindNext (stSql1)
+                     Wend
+                     ShtFM.Cells(iRow, iCol) = dValCumul / 1000
+                     
+                     ElseIf ShtFM.Cells(iRow, 3) = "COD_GRP_CLI" Then
+                     stSql1 = "COD_GRP_CLI = " & Chr(34) & ShtFM.Cells(iRow, 2) & Chr(34)
+                     stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & ShtFM.Cells(iRowAnnee, iCol) & Chr(34)
+                     rstFM.FindFirst (stSql1)
+                     dValCumul = 0
+                     While Not rstFM.NoMatch
+                        dValCumul = dValCumul + rstFM.Fields(ShtFM.Cells(iRow, 4))
+                        rstFM.FindNext (stSql1)
+                     Wend
+                     ShtFM.Cells(iRow, iCol) = dValCumul / 1000
+                     End If
+                     
+                  End If
+                  
+               End If
+               iCol = iCol + 1
+            Wend
+         End If
+      
+         iRow = iRow + 1
+         
+        
+      Wend
+
+
+End Sub
+
+Sub AlimFluxReseaux()
+
+
+ Dim iAnnee As Integer
+   iAnnee = 2016
+   Dim iMois As Integer
+   iMois = 2
+
+   Dim WkbkLiasse As workbook
+   Dim ShtFM As Worksheet
+   Set WkbkLiasse = GetObject("T:\Procédures\Cycle Financier\O_Organisation de la clôture comptable\Automatisation Liasse\Liasse\Liasse_Template.xlsx")
+   Set ShtFM = WkbkLiasse.Sheets("Flux-Reseaux")
+   
+   'Fin variables parametres
+
+   Dim DbsMe As DAO.Database
+   Dim rstFM As DAO.Recordset
+
+   Dim sAnnee As String
+   Dim sMois As String
+   Dim sPresta As String
+   Dim stSql1 As String
+   Dim stSql2 As String
+   Dim stSql3 As String
+   
+   
+   Dim iRow As Long
+   Dim iCol As Long
+   Dim iRowAnnee As Long
+   Dim iRowCum As Long
+   
+   Dim dValCumul As Double
+   
+   
+   Set DbsMe = CurrentDb
+   'Définition de la requête permettant d'obtenir les infos pour compléter Faits Marquants (Voir "Nom" dans Access)
+      'Création des paramètres de la requête
+      sAnnee = CStr(iAnnee - 2)
+      sMois = Right("0" & CStr(iMois), 2)
+      sIntero = "?"
+      'Texte de la requête
+        
+stSql1 = "SELECT Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Tb_HistoVentes.COD_REGR_STAT, " + _
+        "Tb_HistoVentes.COD_GRP_CLI, Tb_HistoVentes.COD_RESEAU_CLI, Tb_HistoVentes.COD_BUDGET, Sum(Tb_HistoVentes.MONT_CA_FORT) AS CA_FORT " + _
+        "FROM Tb_HistoVentes "
+stSql2 = "GROUP BY Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Tb_HistoVentes.COD_REGR_STAT, Tb_HistoVentes.COD_GRP_CLI, Tb_HistoVentes.COD_RESEAU_CLI, Tb_HistoVentes.COD_BUDGET " + _
+        "HAVING (((Tb_HistoVentes.CD_YEAR)>=" + Chr(34) + sAnnee + Chr(34) + ")"
+stSql3 = "AND ((Tb_HistoVentes.CD_MONTH)<=" + Chr(34) + sMois + Chr(34) + ") " + _
+        "AND ((Tb_HistoVentes.COD_REGR_STAT)<>" + Chr(34) + sIntero + Chr(34) + "))"
+
+        
+        
+        
+    
+      'Ouverture du recordset
+      Set rstFM = DbsMe.OpenRecordset(stSql1 + stSql2 + stSql3)
+      
+      'Balayer tout l'onglet pour le remplir
+      iRow = 1
+   
+      Call RefRowParam(ShtFM, iRowAnnee, iRowCum)
+      
+      While ShtFM.Cells(iRow, 1) <> "Fin"
+         'Si la ligne commence par D ==> il y a des cellules de la ligne qui doivent être remplies
+         If ShtFM.Cells(iRow, 1) = "D" Then
+            'Balayer chaque colonne
+            iCol = 1
+            While ShtFM.Cells(1, iCol) <> "Fin"
+               
+               If ShtFM.Cells(1, iCol) = "D" Then 'La colonne commence par "D" ==> la cellule doit être remplie
+                  If ShtFM.Cells(iRowCum, iCol) = "M" Then 'La colonne concerne des données du mois
+                     'Définir les critères permettant de trouver la valeur dans le recordset résultant de la requête
+                      
+                      If ShtFM.Cells(iRow, 4) = "COD_GRP_CLI" Then 'Indique si on regroupe sur l'enseigne ou le budget
+                        stSql1 = "COD_GRP_CLI = " & Chr(34) & ShtFM.Cells(iRow, 3) & Chr(34)
+                        stSql1 = stSql1 & " AND COD_REGR_STAT = " & Chr(34) & ShtFM.Cells(iRow, 2) & Chr(34)
+                        stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & ShtFM.Cells(iRowAnnee, iCol) & Chr(34)
+                        stSql1 = stSql1 & " AND CD_MONTH = " & Chr(34) & sMois & Chr(34)
+                        rstFM.FindFirst (stSql1)
+                          dValMois = 0
+                      While Not rstFM.NoMatch
+                        dValMois = dValMois + rstFM.Fields(ShtFM.Cells(iRow, 5))
+                        rstFM.FindNext (stSql1)
+                     Wend
+                     ShtFM.Cells(iRow, iCol) = dValMois / 1000
+                     
+
+                    ElseIf ShtFM.Cells(iRow, 4) = "COD_RESEAU_CLI" Then 'Indique si on regroupe sur l'enseigne ou le budget
+                        stSql1 = "COD_RESEAU_CLI = " & Chr(34) & ShtFM.Cells(iRow, 3) & Chr(34)
+                        stSql1 = stSql1 & " AND COD_REGR_STAT = " & Chr(34) & ShtFM.Cells(iRow, 2) & Chr(34)
+                        stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & ShtFM.Cells(iRowAnnee, iCol) & Chr(34)
+                        stSql1 = stSql1 & " AND CD_MONTH = " & Chr(34) & sMois & Chr(34)
+                        rstFM.FindFirst (stSql1)
+                          dValMois = 0
+                      While Not rstFM.NoMatch
+                        dValMois = dValMois + rstFM.Fields(ShtFM.Cells(iRow, 5))
+                        rstFM.FindNext (stSql1)
+                     Wend
+                     ShtFM.Cells(iRow, iCol) = dValMois / 1000
+                     
+                     ElseIf ShtFM.Cells(iRow, 4) = "COD_BUDGET" Then 'Indique si on regroupe sur l'enseigne ou le budget
+                        stSql1 = "COD_BUDGET = " & Chr(34) & ShtFM.Cells(iRow, 3) & Chr(34)
+                        stSql1 = stSql1 & " AND COD_REGR_STAT = " & Chr(34) & ShtFM.Cells(iRow, 2) & Chr(34)
+                        stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & ShtFM.Cells(iRowAnnee, iCol) & Chr(34)
+                        stSql1 = stSql1 & " AND CD_MONTH = " & Chr(34) & sMois & Chr(34)
+                        rstFM.FindFirst (stSql1)
+                        If Not rstFM.NoMatch Then
+                        ShtFM.Cells(iRow, iCol) = rstFM.Fields(ShtFM.Cells(iRow, 5)) / 1000
+                        End If
+                     
+                     End If
+                     
+                  End If
+                  
+                  
+                  If ShtFM.Cells(iRowCum, iCol) = "C" Then 'La colonne concerne des données cumulées
+                     'Définir les critères permettant de trouver les valeurs pour l'année dans le recordset résultant de la requête
+                     If ShtFM.Cells(iRow, 4) = "COD_GRP_CLI" Then 'Indique si on regroupe sur l'enseigne ou le budget
+                        stSql1 = "COD_GRP_CLI = " & Chr(34) & ShtFM.Cells(iRow, 3) & Chr(34)
+                        stSql1 = stSql1 & " AND COD_REGR_STAT = " & Chr(34) & ShtFM.Cells(iRow, 2) & Chr(34)
+                        stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & ShtFM.Cells(iRowAnnee, iCol) & Chr(34)
+                        rstFM.FindFirst (stSql1)
+                          dValMois = 0
+                      While Not rstFM.NoMatch
+                        dValMois = dValMois + rstFM.Fields(ShtFM.Cells(iRow, 5))
+                        rstFM.FindNext (stSql1)
+                     Wend
+                     ShtFM.Cells(iRow, iCol) = dValMois / 1000
+                     
+
+                    ElseIf ShtFM.Cells(iRow, 4) = "COD_RESEAU_CLI" Then 'Indique si on regroupe sur l'enseigne ou le budget
+                        stSql1 = "COD_RESEAU_CLI = " & Chr(34) & ShtFM.Cells(iRow, 3) & Chr(34)
+                        stSql1 = stSql1 & " AND COD_REGR_STAT = " & Chr(34) & ShtFM.Cells(iRow, 2) & Chr(34)
+                        stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & ShtFM.Cells(iRowAnnee, iCol) & Chr(34)
+                        rstFM.FindFirst (stSql1)
+                          dValMois = 0
+                      While Not rstFM.NoMatch
+                        dValMois = dValMois + rstFM.Fields(ShtFM.Cells(iRow, 5))
+                        rstFM.FindNext (stSql1)
+                     Wend
+                     ShtFM.Cells(iRow, iCol) = dValMois / 1000
+                     
+                     ElseIf ShtFM.Cells(iRow, 4) = "COD_BUDGET" Then 'Indique si on regroupe sur l'enseigne ou le budget
+                        stSql1 = "COD_BUDGET = " & Chr(34) & ShtFM.Cells(iRow, 3) & Chr(34)
+                        stSql1 = stSql1 & " AND COD_REGR_STAT = " & Chr(34) & ShtFM.Cells(iRow, 2) & Chr(34)
+                        stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & ShtFM.Cells(iRowAnnee, iCol) & Chr(34)
+                        rstFM.FindFirst (stSql1)
+                        dValMois = 0
+                      While Not rstFM.NoMatch
+                        dValMois = dValMois + rstFM.Fields(ShtFM.Cells(iRow, 5))
+                        rstFM.FindNext (stSql1)
+                     Wend
+                     ShtFM.Cells(iRow, iCol) = dValMois / 1000
+                     End If
+                     
+                  End If
+                  
+               End If
+               iCol = iCol + 1
+            Wend
+         End If
+      
+         iRow = iRow + 1
+         
+        
+      Wend
+                    
+
+End Sub
+
+

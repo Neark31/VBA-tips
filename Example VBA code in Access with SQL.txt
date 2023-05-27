@@ -1,0 +1,338 @@
+Option Compare Database
+Option Explicit
+Public rstfm As DAO.Recordset
+Public sAnnee As String
+Public sMoisSup As String
+Public sMoisInf As String
+
+Sub AlimFaitsMarquant(iAnnee As Integer, iMoisSup As Integer, iMoisInf As Integer, WkbkLiasse As Workbook)
+'Cette procédure alimente les champs de l'onglet "Faits Marquants" dans la liasse
+   
+   
+   
+   Dim shtfm As Worksheet
+   Set shtfm = WkbkLiasse.Sheets("Faits Marquants")
+   
+
+   Dim DbsMe As DAO.Database
+
+ 
+     
+   Dim stSql1 As String
+   Dim stSql2 As String
+   
+   Dim iRow As Long
+   Dim iCol As Long
+   Dim iRowAnnee As Long
+   Dim iRowCum As Long
+   
+ 
+   Set DbsMe = CurrentDb
+   
+   'Définition de la requête permettant d'obtenir les infos pour compléter Faits Marquants (Voir "Rq_VBA_FaitsMarquants_01" dans Access)
+      'Création des paramètres de la requête
+      sAnnee = CStr(iAnnee - 2)
+      sMoisSup = Right("0" & CStr(iMoisSup), 2)
+      sMoisInf = Right("0" & CStr(iMoisInf), 2)
+      
+      'Texte de la requête
+      stSql1 = "SELECT Tb_HistoVentes.COD_REGR_STAT, Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Sum(Tb_HistoVentes.MONT_CA_FORT) AS CA_FORT, " + _
+                   "Sum(Tb_HistoVentes.QTE_FACT) AS QTE_FACT " + _
+               "FROM Tb_HistoVentes "
+               
+      stSql2 = "GROUP BY Tb_HistoVentes.COD_REGR_STAT, Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH " + _
+               "HAVING (((Tb_HistoVentes.CD_YEAR) >= " + Chr(34) + sAnnee + Chr(34) + ") And ((Tb_HistoVentes.CD_MONTH) <= " + Chr(34) + sMoisSup + Chr(34) + "))"
+
+      'Ouverture du recordset
+      Set rstfm = DbsMe.OpenRecordset(stSql1 + stSql2)
+    
+End Sub
+
+
+Sub AlimFaitsMarquantsDiffusé(iAnnee As Integer, iMoisSup As Integer, iMoisInf As Integer, WkbkLiasse As Workbook)
+   
+'Cette procédure alimente les champs de l'onglet "Faits Marquants Diffusé" dans la liasse
+
+
+
+    Dim ShtFMD As Worksheet
+    Set ShtFMD = WkbkLiasse.Sheets("Faits Marquants Diffusé")
+   
+   'Fin variables parametres
+
+    Dim DbsMe As DAO.Database
+
+ 
+   
+    Dim stSql1 As String
+    Dim stSql2 As String
+    Dim sPresta As String
+    Dim iRow As Long
+    Dim iCol As Long
+    Dim iRowAnnee As Long
+    Dim iRowCum As Long
+   
+
+   Set DbsMe = CurrentDb
+   
+   'Définition de la requête permettant d'obtenir les infos pour compléter Faits Marquants Diffusé (Voir "Rq_VBA_FaitsMarquantsDiffusé_02" dans Access)
+      'Création des paramètres de la requête
+      sAnnee = CStr(iAnnee - 2)
+      sMoisSup = Right("0" & CStr(iMoisSup), 2)
+      sMoisInf = Right("0" & CStr(iMoisInf), 2)
+      sPresta = "PRX"
+      
+      'Texte de la requête Rq_VBA_FaitsMarquantsDiffusés_02
+stSql1 = "SELECT Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Tb_HistoVentes.COD_REGR_STAT, Sum(Tb_HistoVentes.QTE_FACT) AS QTE_FACT, " + _
+        "Sum(Tb_HistoVentes.MONT_CA_FORT) AS CA_FORT, Tb_HistoVentes.COD_EDITHACH " + _
+        "FROM Tb_HistoVentes "
+stSql2 = "GROUP BY Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Tb_HistoVentes.COD_REGR_STAT, Tb_HistoVentes.COD_EDITHACH " + _
+        "HAVING (((Tb_HistoVentes.CD_YEAR)>= " + Chr(34) + sAnnee + Chr(34) + ") AND ((Tb_HistoVentes.CD_MONTH)<=" + Chr(34) + sMoisSup + Chr(34) + ") " + _
+        "AND ((Tb_HistoVentes.COD_EDITHACH)=" + Chr(34) + sPresta + Chr(34) + "))"
+      
+      'Ouverture du recordset
+      Set rstfm = DbsMe.OpenRecordset(stSql1 + stSql2)
+      'Call remplissage(ShtFMD, rstFMD, sMoisSup, sMoisInf)
+      
+End Sub
+
+Sub AlimReseaux(iAnnee As Integer, iMoisSup As Integer, iMoisInf As Integer, WkbkLiasse As Workbook)
+   
+'Cette procédure alimente les champs de l'onglet "Reseaux" dans la liasse
+
+    Dim ShtR As Worksheet
+    Set ShtR = WkbkLiasse.Sheets("Reseaux")
+   
+    Dim DbsMe As DAO.Database
+
+
+    Dim sIntero As String
+  
+    Dim stSql1 As String
+    Dim stSql2 As String
+    Dim stSql3 As String
+    Dim stSql4 As String
+   
+    Dim iRow As Long
+    Dim iCol As Long
+    Dim iRowAnnee As Long
+    Dim iRowCum As Long
+   
+   
+   Set DbsMe = CurrentDb
+   'Définition de la requête permettant d'obtenir les infos pour compléter Reseaux (Voir "Rq_VBA_Reseaux_03" dans Access)
+      'Création des paramètres de la requête
+    sAnnee = CStr(iAnnee - 2)
+    sMoisSup = Right("0" & CStr(iMoisSup), 2)
+    sMoisInf = Right("0" & CStr(iMoisInf), 2)
+    sIntero = "?"
+      
+      'Texte de la requête Rq_VBA_Reseaux_03
+stSql1 = "SELECT Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Tb_HistoVentes.COD_GRP_CLI, " + _
+        "Tb_HistoVentes.COD_ENSEIGNE, Tb_HistoVentes.COD_EDITEUR, " + _
+        "Sum(Tb_HistoVentes.MONT_CA_FORT) AS CA_FORT "
+stSql2 = "FROM Tb_HistoVentes "
+        
+stSql3 = " WHERE (((Tb_HistoVentes.COD_REGR_STAT)<>" + Chr(34) + sIntero + Chr(34) + "))" + _
+        "GROUP BY Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Tb_HistoVentes.COD_EDITEUR, Tb_HistoVentes.COD_GRP_CLI, Tb_HistoVentes.COD_ENSEIGNE "
+stSql4 = "HAVING (((Tb_HistoVentes.CD_YEAR)>= " + Chr(34) + sAnnee + Chr(34) + ") AND ((Tb_HistoVentes.CD_MONTH)<=" + Chr(34) + sMoisSup + Chr(34) + ")) "
+        
+      'Ouverture du recordset
+    Set rstfm = DbsMe.OpenRecordset(stSql1 + stSql2 + stSql3 + stSql4)
+    'Call remplissage(ShtR, rstR, sMoisSup, sMoisInf)
+      
+End Sub
+
+Sub AlimFluxReseaux(iAnnee As Integer, iMoisSup As Integer, iMoisInf As Integer, WkbkLiasse As Workbook)
+
+   Dim ShtFR As Worksheet
+   Set ShtFR = WkbkLiasse.Sheets("Flux-Reseaux")
+   
+   Dim DbsMe As DAO.Database
+
+   
+   Dim sPresta As String
+   Dim stSql1 As String
+   Dim stSql2 As String
+   Dim stSql3 As String
+   
+
+   
+   Dim iRow As Long
+   Dim iCol As Long
+   Dim iRowAnnee As Long
+   Dim iRowCum As Long
+   Dim sIntero As String
+   
+   
+   Set DbsMe = CurrentDb
+   'Définition de la requête permettant d'obtenir les infos pour compléter Flux-Reseaux (Voir "Rq_VBA_FluxReseaux_04" dans Access)
+      'Création des paramètres de la requête
+      sAnnee = CStr(iAnnee - 2)
+      sMoisSup = Right("0" & CStr(iMoisSup), 2)
+      sMoisInf = Right("0" & CStr(iMoisInf), 2)
+      sIntero = "?"
+      
+      'Texte de la requête Rq_VBA_FluxReseaux_04
+stSql1 = "SELECT Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Tb_HistoVentes.COD_REGR_STAT, " + _
+        "Tb_HistoVentes.COD_GRP_CLI, Tb_HistoVentes.COD_RESEAU_CLI, Tb_HistoVentes.COD_BUDGET, Sum(Tb_HistoVentes.MONT_CA_FORT) AS CA_FORT " + _
+        "FROM Tb_HistoVentes "
+stSql2 = "GROUP BY Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Tb_HistoVentes.COD_REGR_STAT, Tb_HistoVentes.COD_GRP_CLI, Tb_HistoVentes.COD_RESEAU_CLI, Tb_HistoVentes.COD_BUDGET " + _
+        "HAVING (((Tb_HistoVentes.CD_YEAR)>=" + Chr(34) + sAnnee + Chr(34) + ")"
+stSql3 = "AND ((Tb_HistoVentes.CD_MONTH)<=" + Chr(34) + sMoisSup + Chr(34) + ") " + _
+        "AND ((Tb_HistoVentes.COD_REGR_STAT)<>" + Chr(34) + sIntero + Chr(34) + "))"
+
+      'Ouverture du recordset
+      Set rstfm = DbsMe.OpenRecordset(stSql1 + stSql2 + stSql3)
+      
+End Sub
+
+Sub AlimEditeurMois(iAnnee As Integer, iMoisSup As Integer, iMoisInf As Integer, WkbkLiasse As Workbook)
+
+   
+   Dim ShtEM As Worksheet
+   Set ShtEM = WkbkLiasse.Sheets("Editeurs mois")
+
+   Dim DbsMe As DAO.Database
+
+   
+   Dim sIntero As String
+   
+   Dim stSql1 As String
+   Dim stSql2 As String
+   Dim stSql3 As String
+   Dim stSql4 As String
+   Dim stSql5 As String
+   Dim stSql6 As String
+   
+   Dim iRow As Long
+   Dim iCol As Long
+   Dim iRowAnnee As Long
+   Dim iRowCum As Long
+   Dim agregat As String
+   Dim x As Double
+      
+   Set DbsMe = CurrentDb
+   'Définition de la requête permettant d'obtenir les infos pour compléter Editeurs mois (Voir "Rq_VBA_EditeurMoisCumul_05" dans Access)
+      'Création des paramètres de la requête
+      sAnnee = CStr(iAnnee - 2)
+      sMoisSup = Right("0" & CStr(iMoisSup), 2)
+      sMoisInf = Right("0" & CStr(iMoisInf), 2)
+      sIntero = "?"
+      'Texte de la requête
+               
+stSql1 = "SELECT Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Sum(Tb_HistoVentes.MONT_CA_FORT) AS CA_FORT, " + _
+        "Tb_HistoVentes.COD_EDITEUR, DILIDTA_ICEDIT.LIBELLE AS Editeur, "
+stSql2 = "DILIDTA_ICNATU.LIBELLE AS Nature, " + _
+        "DILIDTA_ICBRAN.LIBELLE AS Branche, DILIDTA_ICSGRE.LIBELLE AS SousGroupe, DILIDTA_ICGRPE.LIBELLE AS Groupe "
+
+stSql3 = "FROM ((((Tb_HistoVentes INNER JOIN DILIDTA_ICEDIT ON Tb_HistoVentes.COD_EDITEUR = DILIDTA_ICEDIT.EDITEUR) " + _
+        "INNER JOIN DILIDTA_ICNATU ON DILIDTA_ICEDIT.NATURE = DILIDTA_ICNATU.NATURE) "
+stSql4 = "INNER JOIN DILIDTA_ICBRAN ON DILIDTA_ICNATU.BRANCHE = DILIDTA_ICBRAN.BRANCHE) INNER JOIN DILIDTA_ICSGRE ON DILIDTA_ICBRAN.SOUSGROUPE = DILIDTA_ICSGRE.SOUSGROUPE) " + _
+        "INNER JOIN DILIDTA_ICGRPE ON DILIDTA_ICSGRE.GROUPEEDI = DILIDTA_ICGRPE.GROUPEEDI "
+        
+stSql5 = "WHERE ((Tb_HistoVentes.COD_REGR_STAT) <> " + Chr(34) + sIntero + Chr(34) + ") " + _
+        "GROUP BY Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Tb_HistoVentes.COD_EDITEUR, DILIDTA_ICEDIT.LIBELLE, "
+stSql6 = "DILIDTA_ICNATU.LIBELLE, DILIDTA_ICBRAN.LIBELLE, DILIDTA_ICSGRE.LIBELLE, DILIDTA_ICGRPE.LIBELLE " + _
+        "HAVING (((Tb_HistoVentes.CD_YEAR) >= " + Chr(34) + sAnnee + Chr(34) + ") And ((Tb_HistoVentes.CD_MONTH) <= " + Chr(34) + sMoisSup + Chr(34) + "))"
+              
+
+
+      'Ouverture du recordset
+      Set rstfm = DbsMe.OpenRecordset(stSql1 + stSql2 + stSql3 + stSql4 + stSql5 + stSql6)
+      
+      
+ 
+
+End Sub
+Sub AlimEditeurCumul(iAnnee As Integer, iMoisSup As Integer, iMoisInf As Integer, WkbkLiasse As Workbook)
+
+'Cette procédure alimente les champs de l'onglet "Editeurs Cumul" dans la liasse
+   
+   Dim ShtEM As Worksheet
+   Set ShtEM = WkbkLiasse.Sheets("Editeurs Cumul")
+
+
+   Dim DbsMe As DAO.Database
+
+   
+   Dim sIntero As String
+   
+   Dim stSql1 As String
+   Dim stSql2 As String
+   Dim stSql3 As String
+   Dim stSql4 As String
+   Dim stSql5 As String
+   Dim stSql6 As String
+   
+   Dim iRow As Long
+   Dim iCol As Long
+   Dim iRowAnnee As Long
+   Dim iRowCum As Long
+  
+      
+   Set DbsMe = CurrentDb
+   'Définition de la requête permettant d'obtenir les infos pour compléter Editeurs Cumul (Voir "Rq_VBA_EditeurMoisCumul_05" dans Access)
+      'Création des paramètres de la requête
+      sAnnee = CStr(iAnnee - 2)
+      sMoisSup = Right("0" & CStr(iMoisSup), 2)
+      sMoisInf = Right("0" & CStr(iMoisInf), 2)
+      sIntero = "?"
+      'Texte de la requête
+               
+stSql1 = "SELECT Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Sum(Tb_HistoVentes.MONT_CA_FORT) AS CA_FORT, " + _
+        "Tb_HistoVentes.COD_EDITEUR, DILIDTA_ICEDIT.LIBELLE AS Editeur, "
+stSql2 = "DILIDTA_ICNATU.LIBELLE AS Nature, " + _
+        "DILIDTA_ICBRAN.LIBELLE AS Branche, DILIDTA_ICSGRE.LIBELLE AS SousGroupe, DILIDTA_ICGRPE.LIBELLE AS Groupe "
+
+stSql3 = "FROM ((((Tb_HistoVentes INNER JOIN DILIDTA_ICEDIT ON Tb_HistoVentes.COD_EDITEUR = DILIDTA_ICEDIT.EDITEUR) " + _
+        "INNER JOIN DILIDTA_ICNATU ON DILIDTA_ICEDIT.NATURE = DILIDTA_ICNATU.NATURE) "
+stSql4 = "INNER JOIN DILIDTA_ICBRAN ON DILIDTA_ICNATU.BRANCHE = DILIDTA_ICBRAN.BRANCHE) INNER JOIN DILIDTA_ICSGRE ON DILIDTA_ICBRAN.SOUSGROUPE = DILIDTA_ICSGRE.SOUSGROUPE) " + _
+        "INNER JOIN DILIDTA_ICGRPE ON DILIDTA_ICSGRE.GROUPEEDI = DILIDTA_ICGRPE.GROUPEEDI "
+        
+stSql5 = "WHERE ((Tb_HistoVentes.COD_REGR_STAT) <> " + Chr(34) + sIntero + Chr(34) + ") " + _
+        "GROUP BY Tb_HistoVentes.CD_YEAR, Tb_HistoVentes.CD_MONTH, Tb_HistoVentes.COD_EDITEUR, DILIDTA_ICEDIT.LIBELLE, "
+stSql6 = "DILIDTA_ICNATU.LIBELLE, DILIDTA_ICBRAN.LIBELLE, DILIDTA_ICSGRE.LIBELLE, DILIDTA_ICGRPE.LIBELLE " + _
+        "HAVING (((Tb_HistoVentes.CD_YEAR) >= " + Chr(34) + sAnnee + Chr(34) + ") And ((Tb_HistoVentes.CD_MONTH) <= " + Chr(34) + sMoisSup + Chr(34) + "))"
+      
+      'Ouverture du recordset
+      Set rstfm = DbsMe.OpenRecordset(stSql1 + stSql2 + stSql3 + stSql4 + stSql5 + stSql6)
+
+End Sub
+
+Sub AlimCR(iAnnee As Integer, iMoisSup As Integer, iMoisInf As Integer, WkbkLiasse As Workbook)
+'A modifier une fois qu'on aura mis à jour les nouveaux codes
+'Penser à la conversion pour le mois.il faut rajouter un 0 et le passer en texte
+'Penser à modifier les paramètres "nouveau_code" en le remplaçant par le bon champ.
+'Penser à change les requêtre sql avec la bonne table
+ 
+
+   Dim ShtCR As Worksheet
+   Set ShtCR = WkbkLiasse.Sheets("CR")
+
+   Dim DbsMe As DAO.Database
+   Dim stSql1 As String
+   Dim stSql2 As String
+   
+   Dim iRow As Long
+   Dim iCol As Long
+   Dim iRowAnnee As Long
+   Dim iRowCum As Long
+   
+      
+   Set DbsMe = CurrentDb
+   'Définition de la requête permettant d'obtenir les infos pour compléter Editeurs Cumul (Voir "Rq_VBA_EditeurMoisCumul_05" dans Access)
+      'Création des paramètres de la requête
+      sAnnee = CStr(iAnnee - 2)
+      sMoisSup = Right("0" & CStr(iMoisSup), 2)
+      sMoisInf = Right("0" & CStr(iMoisInf), 2)
+      'Texte de la requête
+               
+stSql1 = "SELECT Test_Tb_HistoBob.HFYEAR, Test_Tb_HistoBob.HMONTH, Test_Tb_HistoBob.Nouveaux_Code, Sum(-[HAMOUNT]) AS AMOUNT " + _
+        "FROM Test_Tb_HistoBob "
+stSql2 = "GROUP BY Test_Tb_HistoBob.HFYEAR, Test_Tb_HistoBob.HMONTH, Test_Tb_HistoBob.Nouveaux_Code " + _
+        "HAVING (((Test_Tb_HistoBob.HFYEAR)>=" + Chr(34) + sAnnee + Chr(34) + ") AND ((Test_Tb_HistoBob.HMONTH)<=" + Chr(34) + sMoisSup + Chr(34) + "))"
+    
+    Set rstfm = DbsMe.OpenRecordset(stSql1 + stSql2)
+      
+End Sub
