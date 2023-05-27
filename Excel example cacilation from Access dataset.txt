@@ -1,0 +1,112 @@
+Option Compare Database
+
+Function Calcul(rst As DAO.Recordset, critere As String, agregat As String)
+Dim valeur As Double
+valeur = 0
+
+rst.FindFirst (critere)
+valeur = 0
+While Not rst.NoMatch
+valeur = valeur + rst.Fields(agregat)
+rst.FindNext (critere)
+Wend
+                  
+Calcul = valeur
+
+
+End Function
+
+Sub remplissage(shtfm As Worksheet, rstfm As DAO.Recordset, sMois As String, sMoisMini As String)
+
+   Dim DbsMe As DAO.Database
+   
+    Dim iRowAnnee As Long
+   Dim iRowCum As Long
+   Dim sAnnee As String
+   
+   Dim stSql1 As String
+   Dim stSql2 As String
+   
+   Dim iRow As Long
+   Dim iCol As Long
+   Dim agregat As String
+   
+       iRow = 1
+   
+      Call RefRowParam(shtfm, iRowAnnee, iRowCum)
+  
+     
+      While shtfm.Cells(iRow, 1) <> "Fin"
+         'Si la ligne commence par D ==> il y a des cellules de la ligne qui doivent être remplies
+         If shtfm.Cells(iRow, 1) = "D" Then
+            'Balayer chaque colonne
+            iCol = 1
+            While shtfm.Cells(1, iCol) <> "Fin"
+               
+               If shtfm.Cells(1, iCol) = "D" Then 'La colonne commence par "D" ==> la cellule doit être remplie
+                  If shtfm.Cells(iRowCum, iCol) = "M" Then 'La colonne concerne des données du mois
+                     'Définir les critères permettant de trouver la valeur dans le recordset résultant de la requête
+               'Pour le CR il faut fare une séparation car les données ne proviennent pas de la même table
+                If shtfm.Name <> "CR" Then
+                     stSql1 = shtfm.Cells(iRow, 2)
+                
+                     If shtfm.Cells(3, iCol) <> "" Then
+                     stSql1 = stSql1 & shtfm.Cells(3, iCol)
+                     End If
+                     stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & shtfm.Cells(iRowAnnee, iCol) & Chr(34)
+                     stSql1 = stSql1 & " AND CD_MONTH <= " & Chr(34) & sMois & Chr(34)
+                     stSql1 = stSql1 & " AND CD_MONTH >= " & Chr(34) & sMoisMini & Chr(34)
+                                          
+                    agregat = shtfm.Cells(iRow, 3)
+                    x = Calcul(rstfm, stSql1, agregat)
+                    shtfm.Cells(iRow, iCol) = x / 1000
+                 Else
+                    stSql1 = shtfm.Cells(iRow, 2)
+                     If shtfm.Cells(3, iCol) <> "" Then
+                     stSql1 = stSql1 & shtfm.Cells(3, iCol)
+                     End If
+                     stSql1 = stSql1 & " AND HFYEAR = " & Chr(34) & shtfm.Cells(iRowAnnee, iCol) & Chr(34)
+                     stSql1 = stSql1 & " AND HMONTH <= " & Chr(34) & sMois & Chr(34)
+                     stSql1 = stSql1 & " AND HMONTH >= " & Chr(34) & sMoisMini & Chr(34)
+                                          
+                    agregat = shtfm.Cells(iRow, 3)
+                    x = Calcul(rstfm, stSql1, agregat)
+                    shtfm.Cells(iRow, iCol) = x / 1000
+                 End If
+                 
+                  End If
+                  
+                  If shtfm.Cells(iRowCum, iCol) = "C" Then 'La colonne concerne des données cumulées
+                     'Définir les critères permettant de trouver les valeurs pour l'année dans le recordset résultant de la requête
+                    If shtfm.Name <> "CR" Then
+                     stSql1 = shtfm.Cells(iRow, 2)
+                     If shtfm.Cells(3, iCol) <> "" Then
+                     stSql1 = stSql1 & shtfm.Cells(3, iCol)
+                     End If
+                     stSql1 = stSql1 & " AND CD_YEAR = " & Chr(34) & shtfm.Cells(iRowAnnee, iCol) & Chr(34)
+                                        
+                    agregat = shtfm.Cells(iRow, 3)
+                    x = Calcul(rstfm, stSql1, agregat)
+                    shtfm.Cells(iRow, iCol) = x / 1000
+                    
+                Else
+                    stSql1 = shtfm.Cells(iRow, 2)
+                     If shtfm.Cells(3, iCol) <> "" Then
+                     stSql1 = stSql1 & shtfm.Cells(3, iCol)
+                     End If
+                     stSql1 = stSql1 & " AND HFYEAR = " & Chr(34) & shtfm.Cells(iRowAnnee, iCol) & Chr(34)
+                                        
+                    agregat = shtfm.Cells(iRow, 3)
+                    x = Calcul(rstfm, stSql1, agregat)
+                    shtfm.Cells(iRow, iCol) = x / 1000
+                End If
+
+                  End If
+               End If
+               iCol = iCol + 1
+            Wend
+         End If
+      
+         iRow = iRow + 1
+      Wend
+End Sub
